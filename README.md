@@ -15,8 +15,8 @@ El desarrollo se organiza en Sprints incrementales, documentando los avances y m
 | Sprint | Descripción | Estado |
 |---|---|---|
 | Sprint 0 | Planeación del proyecto | ✅ Completado |
-| Sprint 1 | Arquitectura y conexión con Oracle | 🔄 En progreso |
-| Sprint 2 | Seguridad y autenticación JWT | ⬜ Pendiente |
+| Sprint 1 | Arquitectura y conexión con Oracle | ✅ En progreso |
+| Sprint 2 | Seguridad y autenticación JWT | 🔄 Pendiente |
 | Sprint 3 | Productos y categorías | ⬜ Pendiente |
 | Sprint 4 | Carrito y pedidos | ⬜ Pendiente |
 | Sprint 5 | Lógica avanzada y PL/SQL | ⬜ Pendiente |
