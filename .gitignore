@@ -31,3 +31,13 @@ build/
 
 ### VS Code ###
 .vscode/
+
+.gradle/
+
+
+# Maven instalado localmente
+/apache-maven-3.9.14/
+
+# Archivos auxiliares de configuración local
+SETUP_MAVEN.md
+setup-maven.bat
