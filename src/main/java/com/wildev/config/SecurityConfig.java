@@ -1,3 +1,4 @@
+
 package com.wildev.config;
 
 import com.wildev.security.JwtAuthenticationFilter;
@@ -17,8 +18,10 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.HttpStatusEntryPoint;
+import org.springframework.security.web.AuthenticationEntryPoint;
+import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
@@ -38,6 +41,7 @@ public class SecurityConfig {
                 new DaoAuthenticationProvider(userDetailsService);
 
         provider.setPasswordEncoder(passwordEncoder);
+
         return provider;
     }
 
@@ -45,37 +49,66 @@ public class SecurityConfig {
     public AuthenticationManager authenticationManager(
             AuthenticationConfiguration configuration)
             throws Exception {
+
         return configuration.getAuthenticationManager();
+    }
+
+    @Bean
+    public AuthenticationEntryPoint authenticationEntryPoint() {
+        return (request, response, authException) -> {
+            System.err.println("[Security] AuthenticationEntryPoint llamado: " + authException.getMessage());
+            System.err.println("[Security] Request: " + request.getRequestURI());
+            System.err.println("[Security] Exception class: " + authException.getClass().getSimpleName());
+            response.setStatus(HttpStatus.UNAUTHORIZED.value());
+            response.setContentType("application/json");
+            response.getWriter().write("{\"error\": \"No autenticado\", \"message\": \"" + authException.getMessage() + "\"}");
+        };
+    }
+
+    @Bean
+    public AccessDeniedHandler accessDeniedHandler() {
+        return (request, response, accessDeniedException) -> {
+            System.err.println("[Security] AccessDeniedHandler llamado");
+            System.err.println("[Security] Request: " + request.getRequestURI());
+            System.err.println("[Security] Exception: " + accessDeniedException.getMessage());
+            response.setStatus(HttpStatus.FORBIDDEN.value());
+            response.setContentType("application/json");
+            response.getWriter().write("{\"error\": \"Acceso denegado\", \"message\": \"" + accessDeniedException.getMessage() + "\"}");
+        };
     }
 
     @Bean
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http,
             AuthenticationProvider authenticationProvider,
-            JwtAuthenticationFilter jwtAuthenticationFilter)
+            JwtAuthenticationFilter jwtAuthenticationFilter,
+            AuthenticationEntryPoint authenticationEntryPoint,
+            AccessDeniedHandler accessDeniedHandler)
             throws Exception {
 
         http
                 .authenticationProvider(authenticationProvider)
+
                 .addFilterBefore(
                         jwtAuthenticationFilter,
                         UsernamePasswordAuthenticationFilter.class
                 )
+
                 .csrf(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
+
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(
                                 SessionCreationPolicy.STATELESS
                         )
                 )
-                .exceptionHandling(exceptions ->
-                        exceptions.authenticationEntryPoint(
-                                new HttpStatusEntryPoint(
-                                        HttpStatus.UNAUTHORIZED
-                                )
-                        )
+
+                .exceptionHandling(exceptions -> exceptions
+                        .authenticationEntryPoint(authenticationEntryPoint)
+                        .accessDeniedHandler(accessDeniedHandler)
                 )
+
                 .authorizeHttpRequests(auth -> auth
 
                         // Rutas públicas
@@ -97,17 +130,19 @@ public class SecurityConfig {
                                 "/api/categories/**"
                         ).hasAnyRole("USER", "ADMIN")
 
-                        // Administrar categorías: solo ADMIN
+                        // Crear categorías: solo ADMIN
                         .requestMatchers(
                                 HttpMethod.POST,
                                 "/api/categories"
                         ).hasRole("ADMIN")
 
+                        // Actualizar categorías: solo ADMIN
                         .requestMatchers(
                                 HttpMethod.PUT,
                                 "/api/categories/**"
                         ).hasRole("ADMIN")
 
+                        // Eliminar categorías: solo ADMIN
                         .requestMatchers(
                                 HttpMethod.DELETE,
                                 "/api/categories/**"

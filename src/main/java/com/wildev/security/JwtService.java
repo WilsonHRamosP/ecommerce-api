@@ -52,12 +52,25 @@ public class JwtService {
 
         Claims claims = extractAllClaims(token);
 
-        return Objects.equals(
-                claims.getSubject(),
-                userDetails.getUsername()
+        String tokenSubject = claims.getSubject();
+        String userDetailsUsername = userDetails.getUsername();
+
+        System.out.println("[JWT Service] Token subject: '" + tokenSubject + "'");
+        System.out.println("[JWT Service] UserDetails username: '" + userDetailsUsername + "'");
+        System.out.println("[JWT Service] Son iguales: " + Objects.equals(tokenSubject, userDetailsUsername));
+        System.out.println("[JWT Service] Expiracion: " + claims.getExpiration());
+        System.out.println("[JWT Service] Es valida: " + (claims.getExpiration() != null && claims.getExpiration().after(new Date())));
+
+        boolean isValid = Objects.equals(
+                tokenSubject,
+                userDetailsUsername
         )
                 && claims.getExpiration() != null
                 && claims.getExpiration().after(new Date());
+
+        System.out.println("[JWT Service] Resultado final: " + isValid);
+
+        return isValid;
     }
 
     private Claims extractAllClaims(String token) {

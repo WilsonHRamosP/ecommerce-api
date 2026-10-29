@@ -48,11 +48,20 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             try {
                 String email = jwtService.extractUsername(token);
 
+                System.out.println("[JWT Filter] Email extraido del token: " + email);
+
                 if (email != null && !email.isBlank()) {
                     UserDetails user =
                             userDetailsService.loadUserByUsername(email);
 
-                    if (jwtService.isTokenValid(token, user)) {
+                    System.out.println("[JWT Filter] Usuario cargado: " + user.getUsername());
+                    System.out.println("[JWT Filter] Roles: " + user.getAuthorities());
+                    System.out.println("[JWT Filter] Usuario habilitado: " + user.isEnabled());
+
+                    boolean isValid = jwtService.isTokenValid(token, user);
+                    System.out.println("[JWT Filter] Token valido: " + isValid);
+
+                    if (isValid) {
                         UsernamePasswordAuthenticationToken authentication =
                                 new UsernamePasswordAuthenticationToken(
                                         user,
@@ -67,14 +76,28 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                         SecurityContextHolder.getContext()
                                 .setAuthentication(authentication);
+
+                        System.out.println("[JWT Filter] Autenticacion establecida para: " + email);
                     }
                 }
+
 
             } catch (JwtException
                      | IllegalArgumentException
                      | UsernameNotFoundException exception) {
-                SecurityContextHolder.clearContext();
+
+                System.err.println(
+                        "[JWT Filter] Error validando JWT: "
+                                + exception.getClass().getSimpleName()
+                                + " - "
+                                + exception.getMessage()
+                );
+
+                if (SecurityContextHolder.getContext().getAuthentication() == null) {
+                    SecurityContextHolder.clearContext();
+                }
             }
+
         }
 
         filterChain.doFilter(request, response);
